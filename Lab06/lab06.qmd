@@ -1,0 +1,186 @@
+---
+title: "Lab06"
+author: "Karina Cardenas, A16742606"
+format: pdf
+toc: true
+---
+
+# Intro to Functions
+## Basics of Functions 
+Let's start writing our first silly function to add some numbers: 
+
+Every R function has 3 things: 
+
+- name (we get to pick this)
+- input arguments (there can be many of them separated by a comma)
+- the body ( The R code that does the work)
+
+## basic function 
+
+```{r}
+#setting a default for y
+add <- function(x, y = 100, z = 10){
+  x + y + z } 
+```
+
+I can just use this function like any other function as long as R knows about it (i.e run the code chunk)
+
+```{r}
+add(1,100)
+```
+
+```{r}
+add(x = c(1,2,3,4), y = 100)
+```
+
+```{r}
+add(1)
+```
+
+Functions can have "required" input arguments and "optional" input arguments. In this case x is "required" to execute and y is "optional" as a default has been assigned as a fallback for a missing y input. 
+
+**Note:** The optional arguments are defined with an equal default value( y = 10)
+
+```{r}
+add( x = 1, y = 100, z = 10)
+```
+
+This code **will not execute** and throw out an error as the original function does not have a third argument of z. 
+
+# Writing functions 
+
+## Function 1- DNA
+> Q. Write a function to return a DNA sequence of user specified length? 
+
+The `sample()` function can help here 
+```{r}
+#generate_dna <- function(size = 5) {}
+students <- c("jeff", "jeremy", "peter")
+
+sample(students, size = 5, replace = TRUE)
+```
+
+> Q. Now work with `bases` rather than `students`
+
+```{r}
+bases <- c("A", "C", "G", "T")
+
+sample(bases, size = 10, replace = TRUE)
+                           
+```
+
+Now I have a working `snippet` of code I can use this as the body of my first function here.
+
+```{r}
+generate_dna <- function(size = 5){
+  bases <- c("A", "C", "G", "T")
+
+sample(bases, size = size, replace = TRUE)
+}
+```
+
+```{r}
+generate_dna(100)
+```
+## Function 2 - grouping
+
+I want the ability to return a sequence like "AGTACCTG" i.e a one element vector where the bases are all 
+
+```{r}
+generate_dna <- function(size = 5, together = TRUE){
+  bases <- c("A", "C", "G", "T")
+  sequence <- sample(bases, size = size, replace = TRUE)
+  
+  if(together) {
+    sequence <- paste(sequence, collapse = "")}
+  return(sequence)
+}
+```
+
+```{r}
+generate_dna()
+```
+
+```{r}
+generate_dna(together = TRUE)
+```
+
+## Function 3 - protein 
+
+> Q. Create a `generate_protein()` function
+
+We can get the set of 20 natural amino-acids from the **bio3d** package. Import the **bio3d** package.
+
+```{r}
+bio3d::aa.table
+aa <- bio3d:: aa.table$aa1[1:20]
+```
+> Q. Write a protein sequence generating function that will return sequences of a user specified length
+
+```{r}
+generate_protein <- function( size = 6, together = TRUE) {
+  
+  #Gets the 20 amino acids as a vector 
+  aa <- bio3d:: aa.table$aa1[1:20]
+  sequence <- sample(aa, size = size, replace = TRUE)
+  
+  ## Optionally return a single element of string 
+  if(together){
+    sequence <- paste(sequence, collapse = "")
+  }
+  
+  return(sequence)
+}
+```
+
+```{r}
+generate_protein(15)
+
+```
+
+> Q. Generate random protein sequences of length 6 to 12 amino acids 
+
+We can fix this inability of looping through the function by using `sapply()`.  This removes the need to hard edit/code. 
+```{r}
+# X = lengths 6 - 12, FUN = generation_protein
+sapply(6:12, generate_protein)
+
+```
+
+## Function 4 - FASTA format
+It would be useful if I could get FASTA format output. I want this to look like
+
+``` 
+>ID.6
+DVIIYG
+>ID.X
+XXXXXX
+```
+
+```{r}
+ans <- sapply(6:12, generate_protein)
+
+cat(ans, sep = "\n")
+```
+
+The functions `paste()` and `cat()` can help us here...
+```{r}
+
+cat(paste(">ID.", 6:12, "\n", ans, sep = ""), sep = "\n")
+
+```
+A more simpler approach... 
+```{r}
+
+id.line <- paste("> ID.", 6:12, sep = "")
+
+seq.line <- paste(id.line, ans, sep="\n")
+
+cat(seq.line, sep = "\n")
+
+```
+> Q. Determine if these sequences can be found 
+
+I Blastp  searched my FASTA format sequences against NR and found that lengths 6,7 and 8 are unique with a 100% coverage and 100% identity. On the other hand, 9 - 12 lengths fail to have 100% coverage showing they do not exist in nature. 
+
+Random sequences of length 9 and above are unique and can't be found in the databases. 
