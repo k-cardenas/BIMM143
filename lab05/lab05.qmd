@@ -1,0 +1,274 @@
+---
+title: "lab05: Data vis with ggplot"
+author: "Karina Cardenas | PID: A16742606"
+format: html
+toc: true
+---
+
+# Background
+
+There are many graphic systems available in R. These include "base" R and tons of add-on packages like **ggplot2**. 
+
+Let's compare "base" and **ggplot2** briefly: We can use some example data that is built-in with R called `cars`: 
+
+```{r}
+head(cars)
+```
+
+## Plotting in Base 
+In base R I can just call `plot()`
+```{r}
+plot(cars)
+```
+
+## Importing ggplot
+How we can do this with **ggplot2** 
+
+First we need to install the package. We do this `install.packages("ggplot2")`. I only need to do this once and then it will be available on my computer from then on.  
+
+> Key point: I only install packages in the R console not within quarto docs or R scripts. 
+
+Before using any add-on package, loading it up with a call to `library()`
+```{r}
+library(ggplot2)
+ggplot(cars)
+```
+
+Every ggplot has at least 3 things: 
+
+- the **data** (in our case `cars`)
+- the **aes**thetics (how the data map to the plot)
+- the **geom**s that determine how the plot is drawn (lines, points, column, boxplots, densities, etc)
+
+Two of three elements: introduced the aesthetics such as specifying the x and y axes. 
+```{r}
+ggplot(cars) + 
+  aes(x = speed, y = dist)
+```
+
+All three elements: For "simple" plots, ggplot is much more verbose than base R but the defaults are nicer and for complicated plots it becomes much more efficient and structured. 
+
+```{r}
+ggplot(cars) + 
+  aes(x = speed, y = dist) +
+  geom_point()
+```
+
+> Q. Add a line to show the relationship of speed and stopping distance (i.e add another "layer")
+
+```{r}
+p <- ggplot(cars) + 
+  aes(x = speed, y = dist) +
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm")
+```
+
+I can always save any ggplot object (i.e plot) and then use it later for adding more layers. 
+```{r}
+p 
+```
+
+> Q. Add a title and subtitle to the plot 
+
+Option 1 
+```{r}
+p + ggtitle("TRIAL")
+```
+Option 2 
+```{r}
+p + labs(title = "My first ggplot", 
+         subtitle = "stopping distance of old cars",
+         caption = "BIMM 143", 
+         x ="Speed (MPG)",
+         y = "Stopping distance (ft)") + 
+  theme_bw()
+```
+
+# Gene expression
+
+Read input data into R 
+```{r}
+url <- "https://bioboot.github.io/bimm143_S20/class-material/up_down_expression.txt"
+genes <- read.delim(url)
+head(genes)
+```
+
+> Q. How many genes are in this dataset? 
+
+```{r}
+nrow(genes)
+```
+
+> Q. How many columns are in the dataset? 
+
+```{r}
+ncol(genes)
+```
+
+> Q. What are the column names?  
+
+```{r}
+colnames(genes)
+```
+
+> Q. How many up and down regulated genes are there? 
+
+```{r}
+table(genes$State)
+```
+
+Q. What fraction of total genes are upregulated? 
+```{r}
+round( table(genes$State)/nrow(genes) * 100, 2 )
+```
+
+# 
+
+> Q. Make a first plot of this data 
+
+## Color scatterplot 
+
+```{r}
+ggplot(genes) + 
+  aes(x = Condition1, y = Condition2, col = State) + 
+   scale_color_manual( values = c("pink", "grey","purple")) +
+  geom_point() + 
+  labs(title = "Gene expression changes upon drug treatment", 
+       x = "control (no drug)", 
+       y = "Drug treated") + 
+  theme_bw()
+```
+
+# Using different geoms 
+
+Let's plot some aspects of the in-built `mtcars` dataset. 
+
+```{r}
+head(mtcars)
+```
+
+> Q. Scatterplot of `mpg` vs `disp`
+
+```{r}
+p1 <- ggplot(mtcars) + 
+  aes(x = mpg, y = disp) + 
+  geom_point() + 
+  geom_smooth(se = FALSE, method = "lm") + 
+  labs(title = "Scatterplot of mpg vs disp", x = "mpg", y = "disp")
+
+p1
+```
+
+> Q. Boxplot of `gear` vs `disp`
+
+```{r}
+p2 <- ggplot(mtcars) + 
+  aes(x = gear, y = disp, group = gear) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot of carb", x = "gear", y = "disp") 
+
+p2
+```
+
+> Q. Barplot of `carb`
+
+```{r}
+p3 <- ggplot(mtcars) + 
+  aes(x = carb) + 
+  geom_bar() + 
+  labs(title = "Barplot of carb")
+
+p3
+```
+
+
+> Q. Smooth of `disp` vs `qsec`
+
+```{r}
+p4 <- ggplot(mtcars) + 
+  aes ( x = disp, y = qsec) + 
+  geom_smooth() + 
+  labs(title = "Smoothplot of disp vs qsec", x = "disp", y = "qsec") 
+
+p4
+```
+
+## Panel of plots
+
+I want to combine all these plots into one figure with multiple pannels. 
+
+We can use the **pathcwork** package to do this. 
+
+```{r}
+library(patchwork)
+(p1 + p2 + p3 + p4)
+```
+
+```{r}
+ggsave(filename ="myplot.png", width = 10, height = 10 )
+```
+
+# Life Expectancy by country plot 
+
+Importing/Reading the file 
+```{r}
+url <- "https://raw.githubusercontent.com/jennybc/gapminder/master/inst/extdata/gapminder.tsv"
+
+gapminder <- read.delim(url)
+
+head(gapminder)
+```
+
+> Q. How many countries are in this dataset?
+
+```{r}
+length(table(gapminder$country))
+```
+
+## Gapminder plot 
+
+```{r}
+ggplot(gapminder) + 
+  aes(x = gdpPercap, y = lifeExp, col = continent, size = pop) + 
+  geom_point(alpha = 0.3) + 
+  facet_wrap(~continent) + 
+  theme_bw()
+```
+
+## animating gapminder 
+
+```{r}
+library(gapminder)
+library(gganimate)
+
+# Setup nice regular ggplot of the gapminder data
+ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
+  geom_point(alpha = 0.7, show.legend = FALSE) +
+  scale_colour_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  scale_x_log10() +
+  # Facet by continent
+  facet_wrap(~continent) +
+  # Here comes the gganimate specific bits
+  labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
+  transition_time(year) +
+  shadow_wake(wake_length = 0.1, alpha = FALSE)
+```
+
+```{r}
+trial1 <- ggplot(mtcars) + 
+aes(x=mpg, y=disp) + geom_point()
+
+trial1
+```
+
+```{r}
+trial2 <- ggplot(mtcars, 
+                 aes(mpg, disp)) +  geom_point()
+
+
+trial2
+```
+
+
+
