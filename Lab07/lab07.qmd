@@ -1,0 +1,247 @@
+---
+title: "Intro to Machine Learning 1"
+author: "Karina Cardenas, A16742606"
+date: "April 22 2025"
+format: pdf
+toc: true 
+---
+## Intro to Machine learning 
+
+There are different types of machine learning, a few notable mentions: 
+
+- **Unsupervised learning**: Finding structure in unlabeled data 
+
+- **Supervised learning**: Making predictions based on labeled data i.e regression/classification 
+
+- **Reinforcement learning**: Making decisions based on past experiences 
+
+
+Today we will explore **unsupervised machine learning** methods starting with clustering and dimensionality reduction. 
+
+## Clustering
+
+To start let's make up some data to cluster where we know what the answer should be. The `rnorm()` function will help us here 
+```{r}
+hist(rnorm(10000, mean = 3))
+```
+
+Return 30 numbers centered on -3
+```{r}
+
+tmp <- c(rnorm(30, mean =-3),
+rnorm(30, mean =+3))
+
+x <- cbind(x = tmp, y = rev(tmp)) 
+
+x
+```
+Make a plot of X 
+```{r}
+plot(x)
+```
+
+### K-means 
+
+The main function in "base" R for K-means clustering is called `kmeans()`: 
+
+```{r}
+
+#x = x
+#centers = 2, # of groups 
+
+km <- kmeans(x, centers = 2 )
+km
+
+```
+
+the `kmeans()` function returns a "list" with 9 components. You can see the named components of any list with the `attributes` function 
+
+```{r}
+attributes(km)
+```
+
+> Q. How many points are in each cluster? 
+
+```{r}
+km$size
+```
+
+> Q. How do we get the cluster membership assignment? 
+
+```{r}
+km$cluster
+```
+
+> Q. Cluster centers? 
+
+```{r}
+km$centers
+```
+
+> Q. Make a plot of our `kmeans()` results showing cluster assignment using different colors for each cluster/group of points and cluster centers? 
+
+```{r}
+#different colors for each cluster/group 
+plot(x, col = km$cluster)
+
+#cluster centers: col = color, pch = shape, cex = character size 
+points(km$centers, col = "blue", pch = 15, cex = 2)
+
+```
+
+> Q. Run `kmeans()` again on `x` and this time cluster it into 4 groups/clusters and plot the same result figure as above. 
+
+```{r}
+
+km4 <- kmeans(x, centers = 4 )
+km4
+
+plot(x, col = km4$cluster, )
+points(km4$centers, col = "blue", pch = 15, cex = 1)
+
+```
+> **keypoint**: K -means clustering is super popular but can be misused. one big limitarion is that it can impose a clustering pattern on your data even if clear natural groupiing doesn't exist - i.e it does what you tell it to do in terms of `centers` 
+
+### Heirarchical Clustering 
+
+The main function in "base" R for hierarchical clustering is called `hclust()`. 
+
+You can't just pass our input dataset as is into `hclust()` as we did with `kmeans()`. You must give "distance matrix" as input. We can get this from the `dist()` function in R. 
+
+```{r}
+#calculating distance matrix 
+d <- dist(x)
+
+#clustering d/x
+hc <- hclust(d)
+
+#printing hc 
+hc
+```
+The results of `hclust()` dont have a useful `print()` method but do have a special `plot()` method. 
+
+```{r}
+#x = hc 
+plot(hc)
+
+#adds a horizontal line to cut the tree
+abline(h = 8, col = "red")
+```
+
+To get out main cluster assignment ( membership vector ), we need to "cut" the tree at the big line. 
+
+```{r}
+#cutree = function, hc = plot/data, h = height at cutting 
+grps <- cutree(hc, h = 8)
+grps
+```
+
+```{r}
+#table function
+table(grps)
+```
+
+```{r}
+#plotting x, with hc grps 
+plot(x, col = grps)
+```
+
+Hierarchical Clustering is distinct in that the dendrogram (tree figure) can reveal the potential grouping in your data (unlike k-means). 
+
+## Principal component Analysis (PCA) 
+
+PCA is a common and highly useful dimensionality reduction technique used in many fields - particularly bioinformatics. 
+
+Here we will analyze some data from the UK on food consumption.
+
+```{r}
+#Reading csv file 
+url <- "https://tinyurl.com/UK-foods"
+x <- read.csv(url)
+
+head(x)
+```
+we need to change the first column to be the names of the foods and not numbered. There are several ways to do so, but this way is inefficient and destructive.
+```{r}
+
+rownames(x) <- x[,1]
+
+#overwriting x by removing a column everytime it is ran 
+x <- x[,-1]
+
+head(x)
+```
+
+However, this way changes the row names of the first column without removing the country columns. 
+```{r}
+x <- read.csv(url, row.names = 1)
+head(x)
+```
+### barplot 1
+
+```{r}
+barplot(as.matrix(x), beside=T, col=rainbow(nrow(x)))
+```
+
+### barplot 2 
+
+```{r}
+barplot(as.matrix(x), beside=F, col=rainbow(nrow(x)))
+```
+
+### Paris plot
+
+One conventional plot that can be useful is called a "paris" plot. 
+```{r}
+#paris = type of plot, x = data, col = color, pch = style of marker 
+pairs(x, col=rainbow(10), pch=16)
+```
+
+### PCA to the Rescue 
+
+The main function in base R for PCA is called `prcomp()`.
+
+```{r}
+#t = transpose, make the countries be the rows and cheese be the columns 
+t(x)
+
+#pca = anlaysis 
+pca <- prcomp(t(x))
+
+#overview of pca results 
+summary(pca)
+```
+
+The `prcomp` function returns a list object of our results with fivee attributes/components
+
+```{r}
+attributes(pca)
+```
+The two main "results" in here are `pca$x` and `pca$rotation`. The first set of (`pcs$x`) contains the scores of the data on the new PC acis - we use these to make our PCA plot. 
+
+```{r}
+pca$x
+```
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+
+ggplot(pca$x) + 
+    aes(PC1, PC2, label = rownames(pca$x)) + 
+    geom_point() + 
+    geom_text_repel()
+```
+The plot utilizes **PCA** to display the similarities that are observed within scotland, England and wales using summarized components. Within this plot, N.Ireland is observed as an outleir, but fails to specify what food category creates this disparity. 
+
+
+The second major result is contained in the `pca$rotation` object/component
+
+```{r}
+ggplot(pca$rotation) + 
+  aes(PC1, rownames(pca$rotation)) +
+  geom_col() + 
+  labs(title = "PCA", x = "PC1", y = "Food types")
+```
+
+Tells us how the original variables contribute to PCA. Anything to the right side of the plot (positive values) is what abundantly consumed in Ireland. It visually displays the differences of Ireland previously not visible with just the data.  
